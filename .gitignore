@@ -4,3 +4,4 @@ __pycache__/
 .streamlit/
 sentinel_data.db
 honeypot_rsa.key
+logs/

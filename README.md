@@ -1,5 +1,9 @@
 # 🛡️ SentinelTrap — SSH Honeypot & Threat Logger
 
+![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)
+![License](https://img.shields.io/badge/License-MIT-green.svg)
+![Status](https://img.shields.io/badge/Status-Active-brightgreen.svg)
+
 Lightweight SSH honeypot yang menangkap kredensial attacker dan memvisualisasikan pola serangan via dashboard SOC real-time. Project portofolio untuk career path **SOC Analyst**.
 
 ## ✨ Features
@@ -10,13 +14,14 @@ Lightweight SSH honeypot yang menangkap kredensial attacker dan memvisualisasika
 - Graceful shutdown & tahan terhadap disconnect paksa dari scanner/bot
 
 ## 🏗️ Architecture
-Attacker/Scanner --> [port 2222] --> sentinel_trap.py (fake SSH server)
-                                          |
-                                          v
-                                   SQLite: attack_logs
-                                          | (read-only)
-                                          v
-                                   dashboard.py (Streamlit SOC UI)
+```mermaid
+flowchart LR
+    A[Attacker / Scanner] -->|SSH :2222| B[sentinel_trap.py<br/>Fake SSH Server]
+    B -->|JSON| C[(SQLite<br/>attack_logs)]
+    B -->|CEF| D[logs/sentinel_cef.log]
+    C -->|read-only| E[dashboard.py<br/>Streamlit SOC UI]
+    D -->|logcollector| F[Wazuh / SIEM]
+```
 
 ## 🧰 Tech Stack
 Python 3 · Paramiko · SQLite · Streamlit · Pandas
@@ -35,6 +40,21 @@ Python 3 · Paramiko · SQLite · Streamlit · Pandas
 - [ ] Integrasi SIEM (Wazuh/Elastic) + alert rules
 - [ ] Geolocation map attacker
 - [ ] Module honeypot HTTP & FTP
+
+## 🔌 SIEM Integration
+SentinelTrap menulis log format **CEF (Common Event Format)** ke `logs/sentinel_cef.log`, siap di-ingest SIEM apa pun.
+
+Sample:
+`CEF:0|SentinelTrap|SSH-Honeypot|1.0|1001|SSH Auth Attempt|7|src=127.0.0.1 suser=admin dpt=2222 rt=2026-09-21T14:03:11Z msg=Password captured: 123456`
+
+### Wazuh (tambah ke ossec.conf)
+<localfile>
+  <location>/path/to/sentinel_trap/logs/sentinel_cef.log</location>
+  <log_format>syslog</log_format>
+</localfile>
+
+## 📸 Dashboard
+![SOC Dashboard](assets/dashboard.png)
 
 ## ⚠️ Disclaimer
 Project edukasi. Jangan deploy di jaringan produksi tanpa isolasi yang memadai.

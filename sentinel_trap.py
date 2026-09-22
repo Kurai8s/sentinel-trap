@@ -7,7 +7,6 @@ import sqlite3
 import os
 from datetime import datetime, timezone
 
-# Bungkam log internal paramiko (noise 10054) -> hanya sinyal serangan yang tampil
 logging.getLogger("paramiko").setLevel(logging.CRITICAL)
 
 # 1. Database
@@ -25,7 +24,11 @@ def init_db():
 
 db_conn = init_db()
 
-# 2. Logging JSON terstruktur (standar SIEM)
+# 2. SIEM-ready CEF logging
+LOG_DIR = 'logs'
+os.makedirs(LOG_DIR, exist_ok=True)
+CEF_LOG = os.path.join(LOG_DIR, 'sentinel_cef.log')
+
 def log_attack(client_addr, username, password):
     log_data = {
         "timestamp": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
@@ -40,9 +43,17 @@ def log_attack(client_addr, username, password):
     ''', (log_data["timestamp"], log_data["source_ip"], log_data["username"],
           log_data["password"], log_data["event_type"]))
     db_conn.commit()
-    print(f"[!] Captured -> {json.dumps(log_data)}")
 
-# 3. Honeypot SSH dengan kunci persisten (fix: SSH client menolak host key berubah)
+    cef = (f"CEF:0|SentinelTrap|SSH-Honeypot|1.0|1001|SSH Auth Attempt|7|"
+           f"src={log_data['source_ip']} suser={username} dpt=2222 "
+           f"rt={log_data['timestamp']} msg=Password captured: {password}")
+    with open(CEF_LOG, 'a', encoding='utf-8') as f:
+        f.write(cef + '\n')
+
+    print(f"[!] Captured -> {json.dumps(log_data)}")
+    print(f"[SIEM] CEF    -> {cef}")
+
+# 3. Honeypot SSH dengan kunci persisten
 def get_host_key():
     key_path = 'honeypot_rsa.key'
     if os.path.exists(key_path):
@@ -71,7 +82,7 @@ def handle_client(client_socket, client_addr):
         if channel is not None:
             channel.close()
     except (paramiko.SSHException, ConnectionResetError, OSError):
-        pass  # attacker disconnect paksa -> wajar, abaikan
+        pass
     except Exception as e:
         print(f"[x] Error from {client_addr[0]}: {e}")
     finally:
@@ -81,7 +92,7 @@ def handle_client(client_socket, client_addr):
         try: client_socket.close()
         except Exception: pass
 
-# 4. Main loop dengan graceful shutdown (fix Ctrl+C di Windows)
+# 4. Main loop + graceful shutdown
 def main():
     shutdown_event = threading.Event()
     threads = []
@@ -89,10 +100,11 @@ def main():
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind(('0.0.0.0', 2222))
     server_socket.listen(100)
-    server_socket.settimeout(1.0)  # KUNCI: agar Ctrl+C bisa menembus
+    server_socket.settimeout(1.0)
 
     print("[*] SentinelTrap SSH Honeypot listening on port 2222...")
     print("[*] Database: sentinel_data.db")
+    print("[*] CEF Log: logs/sentinel_cef.log")
     print("[*] Press Ctrl+C to stop gracefully.")
 
     try:
@@ -100,9 +112,9 @@ def main():
             try:
                 client_socket, client_addr = server_socket.accept()
             except socket.timeout:
-                continue           # tidak ada koneksi, cek ulang flag
+                continue
             except OSError:
-                break              # socket ditutup saat shutdown
+                break
             t = threading.Thread(target=handle_client,
                                  args=(client_socket, client_addr), daemon=True)
             t.start()
@@ -114,10 +126,10 @@ def main():
         try: server_socket.close()
         except Exception: pass
         for t in threads:
-            t.join(timeout=2)      # tunggu worker selesai (maks 2s)
+            t.join(timeout=2)
         try: db_conn.close()
         except Exception: pass
-        print("[*] SentinelTrap stopped. Logs saved to sentinel_data.db")
+        print("[*] SentinelTrap stopped. Logs saved.")
 
 if __name__ == '__main__':
     main()
