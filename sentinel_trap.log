@@ -1,0 +1,6 @@
+2026-09-21 13:20:54,979 | Connected (version 2.0, client OpenSSH_for_Windows_9.5)
+2026-09-21 13:21:01,140 | Auth rejected (none).
+2026-09-21 13:21:15,325 | IP: 127.0.0.1 | User: admin | Pass: 112406
+2026-09-21 13:21:15,326 | Auth rejected (password).
+2026-09-21 13:21:18,997 | IP: 127.0.0.1 | User: admin | Pass: admin
+2026-09-21 13:21:18,998 | Auth rejected (password).
