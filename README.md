@@ -157,7 +157,7 @@ docker exec single-node-wazuh.manager-1 /var/ossec/bin/wazuh-control restart
 
 > ⚠️ **Penting:** Image Wazuh meregenerasi `ossec.conf` setiap container boot. Langkah inject config & reload daemon perlu diulang setelah `docker compose down -v` atau recreate container.
 
-![Wazuh Threat Hunting - SentinelTrap Alert](assets/wazuh-alert.png)
+![Wazuh Threat Hunting - SentinelTrap Alert](assets/wazuh-dashboard.png)
 
 ---
 
