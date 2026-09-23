@@ -1,0 +1,5 @@
+﻿<decoder name="sentineltrap-cef">
+  <prematch>^CEF:0\|SentinelTrap</prematch>
+  <regex offset="after_prematch">src=(\S+) suser=(\S+) dpt=(\d+)</regex>
+  <order>src_ip,src_user,dst_port</order>
+</decoder>

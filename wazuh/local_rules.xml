@@ -1,0 +1,12 @@
+﻿<group name="sentineltrap,">
+  <rule id="100001" level="7">
+    <match>SentinelTrap</match>
+    <description>SentinelTrap: SSH honeypot credential capture attempt</description>
+    <group>authentication_failed,</group>
+  </rule>
+  <rule id="100002" level="10" frequency="5" timeframe="120">
+    <if_matched_sid>100001</if_matched_sid>
+    <description>SentinelTrap: SSH BRUTE-FORCE detected (5 attempts / 2 min)</description>
+    <group>bruteforce,</group>
+  </rule>
+</group>
